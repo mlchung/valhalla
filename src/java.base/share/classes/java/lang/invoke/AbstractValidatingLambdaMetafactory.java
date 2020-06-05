@@ -366,8 +366,8 @@ import static sun.invoke.util.Wrapper.isWrapperType;
                     return !strict;
                 }
             } else {
-                // both are reference types: fromType should be a superclass of toType.
-                return !strict || toType.isAssignableFrom(fromType);
+                // inline or identity types: fromType should be a superclass of toType.
+                return !strict || toType.isConvertibleFrom(fromType);
             }
         }
     }

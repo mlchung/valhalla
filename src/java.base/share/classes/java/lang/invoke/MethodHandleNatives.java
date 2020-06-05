@@ -664,6 +664,7 @@ class MethodHandleNatives {
     }
 
     static boolean canBeCalledVirtual(MemberName symbolicRef, Class<?> definingClass) {
+        assert !definingClass.isInlineClass();
         Class<?> symbolicRefClass = symbolicRef.getDeclaringClass();
         if (symbolicRefClass == definingClass)  return true;
         if (symbolicRef.isStatic() || symbolicRef.isPrivate())  return false;
