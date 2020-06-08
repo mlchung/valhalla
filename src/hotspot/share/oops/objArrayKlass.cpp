@@ -55,7 +55,9 @@ ObjArrayKlass* ObjArrayKlass::allocate(ClassLoaderData* loader_data, int n, Klas
   return new (loader_data, size, THREAD) ObjArrayKlass(n, k, name);
 }
 
-Klass* ObjArrayKlass::allocate_objArray_klass(int n, Klass* element_klass, TRAPS) {
+ObjArrayKlass* ObjArrayKlass::allocate_objArray_klass(ClassLoaderData* loader_data,
+                                                      int n, Klass* element_klass, TRAPS) {
+
   // Eagerly allocate the direct array supertype.
   Klass* super_klass = NULL;
   if (!Universe::is_bootstrapping() || SystemDictionary::Object_klass_loaded()) {
@@ -87,7 +89,7 @@ Klass* ObjArrayKlass::allocate_objArray_klass(int n, Klass* element_klass, TRAPS
           // Now retry from the beginning
           ek = element_klass->array_klass(n, CHECK_NULL);
         }  // re-lock
-        return ek;
+        return ObjArrayKlass::cast(ek);
       }
     } else {
       // The element type is already Object.  Object[] has direct super of Object.
@@ -99,7 +101,6 @@ Klass* ObjArrayKlass::allocate_objArray_klass(int n, Klass* element_klass, TRAPS
   Symbol* name = ArrayKlass::create_element_klass_array_name(element_klass, CHECK_NULL);
 
   // Initialize instance variables
-  ClassLoaderData* loader_data = element_klass->class_loader_data();
   ObjArrayKlass* oak = ObjArrayKlass::allocate(loader_data, n, element_klass, name, CHECK_NULL);
 
   ModuleEntry* module = oak->module();
@@ -119,12 +120,8 @@ Klass* ObjArrayKlass::allocate_objArray_klass(int n, Klass* element_klass, TRAPS
 }
 
 ObjArrayKlass::ObjArrayKlass(int n, Klass* element_klass, Symbol* name) : ArrayKlass(name, ID) {
-  this->set_dimension(n);
-  this->set_element_klass(element_klass);
-  // decrement refcount because object arrays are not explicitly freed.  The
-  // InstanceKlass array_name() keeps the name counted while the klass is
-  // loaded.
-  name->decrement_refcount();
+  set_dimension(n);
+  set_element_klass(element_klass);
 
   Klass* bk;
   if (element_klass->is_objArray_klass()) {
@@ -134,18 +131,17 @@ ObjArrayKlass::ObjArrayKlass(int n, Klass* element_klass, Symbol* name) : ArrayK
   } else {
     bk = element_klass;
   }
-  assert(bk != NULL && (bk->is_instance_klass()
-      || bk->is_typeArray_klass()), "invalid bottom klass");
-  this->set_bottom_klass(bk);
-  this->set_class_loader_data(bk->class_loader_data());
+  assert(bk != NULL && (bk->is_instance_klass() || bk->is_typeArray_klass()), "invalid bottom klass");
+  set_bottom_klass(bk);
+  set_class_loader_data(bk->class_loader_data());
 
   jint lh = array_layout_helper(T_OBJECT);
   if (element_klass->is_value()) {
     lh = layout_helper_set_null_free(lh);
   }
-  this->set_layout_helper(lh);
-  assert(this->is_array_klass(), "sanity");
-  assert(this->is_objArray_klass(), "sanity");
+  set_layout_helper(lh);
+  assert(is_array_klass(), "sanity");
+  assert(is_objArray_klass(), "sanity");
 }
 
 int ObjArrayKlass::oop_size(oop obj) const {
@@ -341,7 +337,7 @@ Klass* ObjArrayKlass::array_klass_impl(bool or_null, int n, TRAPS) {
       if (higher_dimension() == NULL) {
 
         // Create multi-dim klass object and link them together
-        Klass* k = ObjArrayKlass::allocate_objArray_klass(dim + 1, this, CHECK_NULL);
+        Klass* k = ObjArrayKlass::allocate_objArray_klass(class_loader_data(), dim + 1, this, CHECK_NULL);
         ObjArrayKlass* ak = ObjArrayKlass::cast(k);
         ak->set_lower_dimension(this);
         // use 'release' to pair with lock-free load

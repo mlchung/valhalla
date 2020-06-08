@@ -3306,11 +3306,10 @@ return mh1;
          * @since 1.8
          */
         public MethodHandleInfo revealDirect(MethodHandle target) {
-            MemberName member = target.internalMemberName();
-            if (member == null || (!member.isResolved() &&
-                                   !member.isMethodHandleInvoke() &&
-                                   !member.isVarHandleMethodInvoke()))
+            if (!target.isCrackable()) {
                 throw newIllegalArgumentException("not a direct method handle");
+            }
+            MemberName member = target.internalMemberName();
             Class<?> defc = member.getDeclaringClass();
             byte refKind = member.getReferenceKind();
             assert(MethodHandleNatives.refKindIsValid(refKind));
@@ -3989,7 +3988,7 @@ return mh1;
      *     {@code short}, {@code char}, {@code int}, {@code long},
      *     {@code float}, or {@code double} then numeric atomic update access
      *     modes are unsupported.
-     * <li>if the field type is anything other than {@code boolean},
+     * <li>if the component type is anything other than {@code boolean},
      *     {@code byte}, {@code short}, {@code char}, {@code int} or
      *     {@code long} then bitwise atomic update access modes are
      *     unsupported.

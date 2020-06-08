@@ -96,7 +96,6 @@ class HotSpotVMConfig extends HotSpotVMConfigAccess {
     final int vtableEntrySize = getFieldValue("CompilerToVM::Data::sizeof_vtableEntry", Integer.class, "int");
     final int vtableEntryMethodOffset = getFieldOffset("vtableEntry::_method", Integer.class, "Method*");
 
-    final int instanceKlassSourceFileNameIndexOffset = getFieldOffset("InstanceKlass::_source_file_name_index", Integer.class, "u2");
     final int instanceKlassInitStateOffset = getFieldOffset("InstanceKlass::_init_state", Integer.class, "u1");
     final int instanceKlassConstantsOffset = getFieldOffset("InstanceKlass::_constants", Integer.class, "ConstantPool*");
     final int instanceKlassFieldsOffset = getFieldOffset("InstanceKlass::_fields", Integer.class, "Array<u2>*");
@@ -228,10 +227,11 @@ class HotSpotVMConfig extends HotSpotVMConfigAccess {
     final int constantPoolTagsOffset = getFieldOffset("ConstantPool::_tags", Integer.class, "Array<u1>*");
     final int constantPoolHolderOffset = getFieldOffset("ConstantPool::_pool_holder", Integer.class, "InstanceKlass*");
     final int constantPoolLengthOffset = getFieldOffset("ConstantPool::_length", Integer.class, "int");
-    final int constantPoolFlagsOffset = getFieldOffset("ConstantPool::_flags", Integer.class, "int");
+    final int constantPoolFlagsOffset = getFieldOffset("ConstantPool::_flags", Integer.class, "u2");
 
     final int constantPoolCpCacheIndexTag = getConstant("ConstantPool::CPCACHE_INDEX_TAG", Integer.class);
     final int constantPoolHasDynamicConstant = getConstant("ConstantPool::_has_dynamic_constant", Integer.class);
+    final int constantPoolSourceFileNameIndexOffset = getFieldOffset("ConstantPool::_source_file_name_index", Integer.class, "u2");
 
     final int jvmConstantUtf8 = getConstant("JVM_CONSTANT_Utf8", Integer.class);
     final int jvmConstantInteger = getConstant("JVM_CONSTANT_Integer", Integer.class);
