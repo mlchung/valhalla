@@ -203,14 +203,18 @@ public class ConstableTest {
                 throw new UnsupportedOperationException("reference kind " + refKind);
         }
         assertEquals(mh.describeConstable().get(), desc);
+        MethodHandle mh1 = (MethodHandle) desc.resolveConstantDesc(lookup);
 
         // invoke the method handle
         if (refKind == REF_invokeStatic) {
             assertEquals(mh.invoke(args[0]), args[1]);
+            assertEquals(mh1.invoke(args[0]), args[1]);
         } else if (refKind == REF_invokeVirtual) {
             assertEquals(mh.invoke(args[0], args[1]), args[2]);
+            assertEquals(mh1.invoke(args[0], args[1]), args[2]);
         } else if (refKind == REF_getField) {
             assertEquals(mh.invoke(args[0]), args[1]);
+            assertEquals(mh1.invoke(args[0]), args[1]);
         }
     }
 }
