@@ -24,6 +24,7 @@
 /*
  * @test
  * @summary Test constant APIs for inline classes
+ * @build Point
  * @run testng/othervm test.ConstableTest
  */
 
@@ -47,6 +48,8 @@ import static org.testng.Assert.*;
 public class ConstableTest {
     static final String VALUE_DESCRIPTOR = "Qtest/ConstableTest$Value;";
     static final String VALUE_REF_DESCRIPTOR = "Ltest/ConstableTest$Value$ref;";
+    static final String POINT_DESCRIPTOR = "QPoint;";
+    static final String POINT_REF_DESCRIPTOR = "LPoint$ref;";
 
     static inline class Value {
         int x;
@@ -82,13 +85,20 @@ public class ConstableTest {
     }
 
     @DataProvider
-    static Object[][] classDescriptors() {
+    static Object[][] classDescriptors() throws Exception {
+        Class<?> pointClass = Class.forName("Point");
+        Class<?> pointRefClass = Class.forName("Point$ref");
+
         return new Object[][]{
             new Object[] { ConstableTest.class, "Ltest/ConstableTest;" },
             new Object[] { Value.class, VALUE_DESCRIPTOR },
             new Object[] { Value.ref.class, VALUE_REF_DESCRIPTOR },
             new Object[] { Value[][].class, "[[" + VALUE_DESCRIPTOR },
-            new Object[] { Value.ref[][][].class, "[[[" + VALUE_REF_DESCRIPTOR }
+            new Object[] { Value.ref[][][].class, "[[[" + VALUE_REF_DESCRIPTOR },
+            new Object[] { pointClass, POINT_DESCRIPTOR },
+            new Object[] { pointRefClass, POINT_REF_DESCRIPTOR },
+            new Object[] { pointClass.arrayType(), "[" + POINT_DESCRIPTOR },
+            new Object[] { pointRefClass.arrayType(), "[" + POINT_REF_DESCRIPTOR },
         };
     }
 

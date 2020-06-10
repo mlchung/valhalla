@@ -734,6 +734,8 @@ class Field extends AccessibleObject implements Member {
      * <li>{@link #setAccessible(boolean) setAccessible(true)} has succeeded for
      *     this {@code Field} object;</li>
      * <li>the field is non-static; and</li>
+     * <li>the field's declaring class is not an {@linkplain Class#isInlineClass()}
+     *     inline class}; and</li>
      * <li>the field's declaring class is not a {@linkplain Class#isHidden()
      *     hidden class}.</li>
      * </ul>

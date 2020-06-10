@@ -177,7 +177,8 @@ public class AccessibleObject implements AnnotatedElement {
      * to the caller's module. </p>
      *
      * <p> This method cannot be used to enable {@linkplain Field#set <em>write</em>}
-     * access to a final field declared in a {@linkplain Class#isHidden() hidden class},
+     * access to a final field declared in a {@linkplain Class#isHidden() hidden class}
+     * and an {@linkplain Class#isInlineClass() inline class}
      * since such fields are not modifiable.  The {@code accessible} flag when
      * {@code true} suppresses Java language access control checks to only
      * enable {@linkplain Field#get <em>read</em>} access to such fields.

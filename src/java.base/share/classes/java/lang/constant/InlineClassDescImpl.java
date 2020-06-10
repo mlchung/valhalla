@@ -31,8 +31,8 @@ import static java.lang.constant.ConstantUtils.internalToBinary;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A <a href="package-summary.html#nominal">nominal descriptor</a> for a class,
- * interface, or array type.  A {@linkplain InlineClassDescImpl} corresponds to a
+ * A <a href="package-summary.html#nominal">nominal descriptor</a> for an inline
+ * class or array type.  A {@linkplain InlineClassDescImpl} corresponds to a
  * {@code Constant_Class_info} entry in the constant pool of a classfile.
  */
 final class InlineClassDescImpl implements ClassDesc {
@@ -68,9 +68,9 @@ final class InlineClassDescImpl implements ClassDesc {
         for (int i=0; i<depth; i++)
             c = c.componentType();
 
-        assert !c.isPrimitive();
-
+        assert c.isInlineClass();
         Class<?> clazz = lookup.findClass(internalToBinary(dropFirstAndLastChar(c.descriptorString())));
+
         for (int i = 0; i < depth; i++)
             clazz = clazz.arrayType();
         return clazz;

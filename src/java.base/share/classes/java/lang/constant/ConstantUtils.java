@@ -188,7 +188,7 @@ class ConstantUtils {
                     return index - start + 1;
                 case JVM_SIGNATURE_CLASS:
                 case JVM_SIGNATURE_INLINE_CLASS:
-                    // Skip leading 'L' and ignore first appearance of ';'
+                    // Skip leading 'L' or 'Q' and ignore first appearance of ';'
                     index++;
                     int indexOfSemi = descriptor.indexOf(';', index);
                     if (indexOfSemi != -1) {

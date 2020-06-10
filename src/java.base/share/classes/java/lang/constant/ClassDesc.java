@@ -142,7 +142,7 @@ public interface ClassDesc
     static ClassDesc ofInlineClass(String packageName, String className) {
         ConstantUtils.validateBinaryClassName(requireNonNull(packageName));
         if (packageName.isEmpty()) {
-            return of(className);
+            return ofInlineClass(className);
         }
         validateMemberName(requireNonNull(className), false);
         return ofDescriptor("Q" + binaryToInternal(packageName) +
