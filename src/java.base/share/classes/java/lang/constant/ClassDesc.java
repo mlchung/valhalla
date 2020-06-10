@@ -63,7 +63,7 @@ public interface ClassDesc
                 TypeDescriptor.OfField<ClassDesc> {
 
     /**
-     * Returns a {@linkplain ClassDesc} for a class or interface type,
+     * Returns a {@linkplain ClassDesc} for a reference class or interface type,
      * given the name of the class or interface, such as {@code "java.lang.String"}.
      * (To create a descriptor for an array type, either use {@link #ofDescriptor(String)}
      * or {@link #arrayType()}; to create a descriptor for a primitive type, use
@@ -82,9 +82,9 @@ public interface ClassDesc
     }
 
     /**
-     * Returns a {@linkplain ClassDesc} for a class or interface type,
+     * Returns a {@linkplain ClassDesc} for a reference class or interface type,
      * given a package name and the unqualified (simple) name for the
-     * class or interface.
+     * reference class or interface.
      *
      * @param packageName the package name (dot-separated); if the package
      *                    name is the empty string, the class is considered to
@@ -102,6 +102,50 @@ public interface ClassDesc
         }
         validateMemberName(requireNonNull(className), false);
         return ofDescriptor("L" + binaryToInternal(packageName) +
+                (packageName.length() > 0 ? "/" : "") + className + ";");
+    }
+
+
+    /**
+     * Returns a {@linkplain ClassDesc} for an inline class
+     * given the name of the inline class, such as {@code "p.Point"}.
+     * (To create a descriptor for an array type, either use {@link #ofDescriptor(String)}
+     * or {@link #arrayType()}).
+     *
+     * @param name the fully qualified (dot-separated) binary class name
+     * @return a {@linkplain ClassDesc} describing the desired inline class
+     * @throws NullPointerException if the argument is {@code null}
+     * @throws IllegalArgumentException if the name string is not in the
+     * correct format
+     * @since Valhalla
+     */
+    static ClassDesc ofInlineClass(String name) {
+        ConstantUtils.validateBinaryClassName(requireNonNull(name));
+        return ClassDesc.ofDescriptor("Q" + binaryToInternal(name) + ";");
+    }
+
+    /**
+     * Returns a {@linkplain ClassDesc} for an inline class
+     * given a package name and the unqualified (simple) name for the
+     * inline class.
+     *
+     * @param packageName the package name (dot-separated); if the package
+     *                    name is the empty string, the class is considered to
+     *                    be in the unnamed package
+     * @param className the unqualified (simple) inline class name
+     * @return a {@linkplain ClassDesc} describing the desired inline class
+     * @throws NullPointerException if any argument is {@code null}
+     * @throws IllegalArgumentException if the package name or class name are
+     * not in the correct format
+     * @since Valhalla
+     */
+    static ClassDesc ofInlineClass(String packageName, String className) {
+        ConstantUtils.validateBinaryClassName(requireNonNull(packageName));
+        if (packageName.isEmpty()) {
+            return ofInlineClass(className);
+        }
+        validateMemberName(requireNonNull(className), false);
+        return ofDescriptor("Q" + binaryToInternal(packageName) +
                 (packageName.length() > 0 ? "/" : "") + className + ";");
     }
 
@@ -143,7 +187,9 @@ public interface ClassDesc
         }
         return (descriptor.length() == 1)
                ? new PrimitiveClassDescImpl(descriptor)
-               : new ReferenceClassDescImpl(descriptor);
+               : (descriptor.charAt(0) == 'Q'
+                        ? new InlineClassDescImpl(descriptor)
+                        : new ReferenceClassDescImpl(descriptor));
     }
 
     /**
@@ -255,7 +301,17 @@ public interface ClassDesc
      * @return whether this {@linkplain ClassDesc} describes a class or interface type
      */
     default boolean isClassOrInterface() {
-        return descriptorString().startsWith("L");
+        return descriptorString().startsWith("L") || isInlineClass();
+    }
+
+    /**
+     * Returns whether this {@linkplain ClassDesc} describes an inline class.
+     *
+     * @return whether this {@linkplain ClassDesc} describes an inline class
+     * @since Valhalla
+     */
+    default boolean isInlineClass() {
+        return descriptorString().startsWith("Q");
     }
 
     /**
