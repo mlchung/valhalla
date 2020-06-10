@@ -366,8 +366,9 @@ import static sun.invoke.util.Wrapper.isWrapperType;
                     return !strict;
                 }
             } else {
-                // inline or identity types: fromType should be a superclass of toType.
-                return !strict || toType.isConvertibleFrom(fromType);
+                // inline types: fromType and toType are projection types of the same inline class
+                // identity types: fromType should be a superclass of toType.
+                return !strict || fromType.isConvertibleTo(toType);
             }
         }
     }

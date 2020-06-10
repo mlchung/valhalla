@@ -147,6 +147,7 @@ class ConstantUtils {
     private static final char JVM_SIGNATURE_BYTE = 'B';
     private static final char JVM_SIGNATURE_CHAR = 'C';
     private static final char JVM_SIGNATURE_CLASS = 'L';
+    private static final char JVM_SIGNATURE_INLINE_CLASS = 'Q';
     private static final char JVM_SIGNATURE_ENDCLASS = ';';
     private static final char JVM_SIGNATURE_ENUM = 'E';
     private static final char JVM_SIGNATURE_FLOAT = 'F';
@@ -186,6 +187,7 @@ class ConstantUtils {
                 case JVM_SIGNATURE_DOUBLE:
                     return index - start + 1;
                 case JVM_SIGNATURE_CLASS:
+                case JVM_SIGNATURE_INLINE_CLASS:
                     // Skip leading 'L' and ignore first appearance of ';'
                     index++;
                     int indexOfSemi = descriptor.indexOf(';', index);
