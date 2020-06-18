@@ -689,8 +689,16 @@ JRT_LEAF(BasicType, Deoptimization::unpack_frames(JavaThread* thread, int exec_m
 
   UnrollBlock* info = array->unroll_block();
 
+  // We set the last_Java frame. But the stack isn't really parsable here. So we
+  // clear it to make sure JFR understands not to try and walk stacks from events
+  // in here.
+  intptr_t* sp = thread->frame_anchor()->last_Java_sp();
+  thread->frame_anchor()->set_last_Java_sp(NULL);
+
   // Unpack the interpreter frames and any adapter frame (c2 only) we might create.
   array->unpack_to_stack(stub_frame, exec_mode, info->caller_actual_parameters());
+
+  thread->frame_anchor()->set_last_Java_sp(sp);
 
   BasicType bt = info->return_type();
 
@@ -826,7 +834,6 @@ JRT_LEAF(BasicType, Deoptimization::unpack_frames(JavaThread* thread, int exec_m
     }
   }
 #endif /* !PRODUCT */
-
 
   return bt;
 JRT_END
@@ -1277,7 +1284,7 @@ static int reassign_fields_by_klass(InstanceKlass* klass, frame* fr, RegisterMap
         if (field._type == T_VALUETYPE) {
           field._type = T_OBJECT;
         }
-        if (fs.is_flattened()) {
+        if (fs.is_inlined()) {
           // Resolve klass of flattened value type field
           Klass* vk = klass->get_value_field_klass(fs.index());
           field._klass = ValueKlass::cast(vk);

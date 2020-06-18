@@ -233,7 +233,7 @@ Thread::Thread() {
   set_resource_area(new (mtThread)ResourceArea());
   DEBUG_ONLY(_current_resource_mark = NULL;)
   set_handle_area(new (mtThread) HandleArea(NULL));
-  set_metadata_handles(new (ResourceObj::C_HEAP, mtClass) GrowableArray<Metadata*>(30, true));
+  set_metadata_handles(new (ResourceObj::C_HEAP, mtClass) GrowableArray<Metadata*>(30, mtClass));
   set_active_handles(NULL);
   set_free_handle_block(NULL);
   set_last_handle_mark(NULL);
@@ -4741,6 +4741,22 @@ JavaThread *Threads::owning_thread_from_monitor_owner(ThreadsList * t_list,
   return the_owner;
 }
 
+class PrintOnClosure : public ThreadClosure {
+private:
+  outputStream* _st;
+
+public:
+  PrintOnClosure(outputStream* st) :
+      _st(st) {}
+
+  virtual void do_thread(Thread* thread) {
+    if (thread != NULL) {
+      thread->print_on(_st);
+      _st->cr();
+    }
+  }
+};
+
 // Threads::print_on() is called at safepoint by VM_PrintThreads operation.
 void Threads::print_on(outputStream* st, bool print_stacks,
                        bool internal_format, bool print_concurrent_locks,
@@ -4783,14 +4799,10 @@ void Threads::print_on(outputStream* st, bool print_stacks,
 #endif // INCLUDE_SERVICES
   }
 
-  VMThread::vm_thread()->print_on(st);
-  st->cr();
-  Universe::heap()->print_gc_threads_on(st);
-  WatcherThread* wt = WatcherThread::watcher_thread();
-  if (wt != NULL) {
-    wt->print_on(st);
-    st->cr();
-  }
+  PrintOnClosure cl(st);
+  cl.do_thread(VMThread::vm_thread());
+  Universe::heap()->gc_threads_do(&cl);
+  cl.do_thread(WatcherThread::watcher_thread());
 
   st->flush();
 }

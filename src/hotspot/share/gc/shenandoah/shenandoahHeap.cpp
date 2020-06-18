@@ -1178,13 +1178,6 @@ void ShenandoahHeap::prepare_for_verify() {
   }
 }
 
-void ShenandoahHeap::print_gc_threads_on(outputStream* st) const {
-  workers()->print_worker_threads_on(st);
-  if (ShenandoahStringDedup::is_enabled()) {
-    ShenandoahStringDedup::print_worker_threads_on(st);
-  }
-}
-
 void ShenandoahHeap::gc_threads_do(ThreadClosure* tcl) const {
   workers()->threads_do(tcl);
   if (_safepoint_workers != NULL) {
@@ -1304,11 +1297,16 @@ void ShenandoahHeap::object_iterate(ObjectClosure* cl) {
 
   Stack<oop,mtGC> oop_stack;
 
-  // First, we process GC roots according to current GC cycle. This populates the work stack with initial objects.
-  ShenandoahHeapIterationRootScanner rp;
   ObjectIterateScanRootClosure oops(&_aux_bit_map, &oop_stack);
 
-  rp.roots_do(&oops);
+  {
+    // First, we process GC roots according to current GC cycle.
+    // This populates the work stack with initial objects.
+    // It is important to relinquish the associated locks before diving
+    // into heap dumper.
+    ShenandoahHeapIterationRootScanner rp;
+    rp.roots_do(&oops);
+  }
 
   // Work through the oop stack to traverse heap.
   while (! oop_stack.is_empty()) {
@@ -1657,7 +1655,6 @@ class ShenandoahConcurrentRootsEvacUpdateTask : public AbstractGangTask {
 private:
   ShenandoahVMRoots<true /*concurrent*/>        _vm_roots;
   ShenandoahClassLoaderDataRoots<true /*concurrent*/, false /*single threaded*/> _cld_roots;
-  ShenandoahConcurrentStringDedupRoots          _dedup_roots;
 
 public:
   ShenandoahConcurrentRootsEvacUpdateTask(ShenandoahPhaseTimings::Phase phase) :
@@ -1679,12 +1676,6 @@ public:
       ShenandoahEvacuateUpdateRootsClosure<> cl;
       CLDToOopClosure clds(&cl, ClassLoaderData::_claim_strong);
       _cld_roots.cld_do(&clds, worker_id);
-    }
-
-    {
-      ShenandoahForwardedIsAliveClosure is_alive;
-      ShenandoahEvacuateUpdateRootsClosure<MO_RELEASE> keep_alive;
-      _dedup_roots.oops_do(&is_alive, &keep_alive, worker_id);
     }
   }
 };
@@ -1775,6 +1766,7 @@ private:
   ShenandoahClassLoaderDataRoots<true /* concurrent */, false /* single thread*/>
                                            _cld_roots;
   ShenandoahConcurrentNMethodIterator      _nmethod_itr;
+  ShenandoahConcurrentStringDedupRoots     _dedup_roots;
   bool                                     _concurrent_class_unloading;
 
 public:
@@ -1786,6 +1778,7 @@ public:
     _vm_roots(OopStorageSet::vm_weak(), phase, ShenandoahPhaseTimings::VMWeakRoots),
     _cld_roots(phase, ShenandoahHeap::heap()->workers()->active_workers()),
     _nmethod_itr(ShenandoahCodeRoots::table()),
+    _dedup_roots(phase),
     _concurrent_class_unloading(ShenandoahConcurrentRoots::should_do_concurrent_class_unloading()) {
     StringTable::reset_dead_counter();
     ResolvedMethodTable::reset_dead_counter();
@@ -1821,6 +1814,11 @@ public:
       cl.reset_dead_counter();
       _resolved_method_table_roots.oops_do(&cl, worker_id);
       ResolvedMethodTable::inc_dead_counter(cl.dead_counter());
+
+      // String dedup weak roots
+      ShenandoahForwardedIsAliveClosure is_alive;
+      ShenandoahEvacuateUpdateRootsClosure<MO_RELEASE> keep_alive;
+      _dedup_roots.oops_do(&is_alive, &keep_alive, worker_id);
     }
 
     // If we are going to perform concurrent class unloading later on, we need to

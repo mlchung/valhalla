@@ -1367,9 +1367,11 @@ void Parse::Block::init_graph(Parse* outer) {
     _successors[i] = block2;
 
     // Accumulate pred info for the other block, too.
-    if (i < ns) {
-      block2->_pred_count++;
-    } else {
+    // Note: We also need to set _pred_count for exception blocks since they could
+    // also have normal predecessors (reached without athrow by an explicit jump).
+    // This also means that next_path_num can be called along exception paths.
+    block2->_pred_count++;
+    if (i >= ns) {
       block2->_is_handler = true;
     }
 
@@ -1384,10 +1386,6 @@ void Parse::Block::init_graph(Parse* outer) {
     }
     #endif
   }
-
-  // Note: We never call next_path_num along exception paths, so they
-  // never get processed as "ready".  Also, the input phis of exception
-  // handlers get specially processed, so that
 }
 
 //---------------------------successor_for_bci---------------------------------
@@ -1727,7 +1725,7 @@ void Parse::merge_common(Parse::Block* target, int pnum) {
       if (t != NULL && t != Type::BOTTOM) {
         if (n->is_ValueType() && !t->isa_valuetype()) {
           // Allocate value type in src block to be able to merge it with oop in target block
-          map()->set_req(j, ValueTypePtrNode::make_from_value_type(this, n->as_ValueType()));
+          map()->set_req(j, n->as_ValueType()->buffer(this));
         }
         assert(!t->isa_valuetype() || n->is_ValueType(), "inconsistent typeflow info");
       }
@@ -2367,7 +2365,7 @@ void Parse::return_current(Node* value) {
       PreserveReexecuteState preexecs(this);
       jvms()->set_should_reexecute(true);
       inc_sp(1);
-      value = ValueTypePtrNode::make_from_value_type(this, value->as_ValueType());
+      value = value->as_ValueType()->buffer(this);
       if (Compile::current()->inlining_incrementally()) {
         value = value->as_ValueTypeBase()->allocate_fields(this);
       }

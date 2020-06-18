@@ -177,7 +177,8 @@ private:
   // Flags of the current shared class.
   u2     _shared_class_flags;
   enum {
-    _has_raw_archived_mirror = 1
+    _has_raw_archived_mirror = 1,
+    _archived_lambda_proxy_is_available = 2
   };
 #endif
 
@@ -201,7 +202,7 @@ protected:
   enum StaticLookupMode   { find_static,   skip_static };
   enum PrivateLookupMode  { find_private,  skip_private };
 
-  bool is_klass() const volatile { return true; }
+  virtual bool is_klass() const { return true; }
 
   // super() cannot be InstanceKlass* -- Java arrays are covariant, and _super is used
   // to implement that. NB: the _super of "[Ljava/lang/Integer;" is "[Ljava/lang/Number;"
@@ -294,6 +295,7 @@ protected:
 
   void set_next_link(Klass* k) { _next_link = k; }
   Klass* next_link() const { return _next_link; }   // The next klass defined by the class loader.
+  Klass** next_link_addr() { return &_next_link; }
 
   // class loader data
   ClassLoaderData* class_loader_data() const               { return _class_loader_data; }
@@ -315,6 +317,17 @@ protected:
   }
   bool has_raw_archived_mirror() const {
     CDS_ONLY(return (_shared_class_flags & _has_raw_archived_mirror) != 0;)
+    NOT_CDS(return false;)
+  }
+
+  void set_lambda_proxy_is_available() {
+    CDS_ONLY(_shared_class_flags |= _archived_lambda_proxy_is_available;)
+  }
+  void clear_lambda_proxy_is_available() {
+    CDS_ONLY(_shared_class_flags &= ~_archived_lambda_proxy_is_available;)
+  }
+  bool lambda_proxy_is_available() const {
+    CDS_ONLY(return (_shared_class_flags & _archived_lambda_proxy_is_available) != 0;)
     NOT_CDS(return false;)
   }
 
@@ -592,7 +605,7 @@ protected:
   virtual bool is_valueArray_klass_slow()   const { return false; }
 #endif // ASSERT
   // current implementation uses this method even in non debug builds
-  virtual bool is_value_slow()          const { return false; }
+  virtual bool is_inline_klass_slow()       const { return false; }
  public:
 
   // Fast non-virtual versions
@@ -618,7 +631,7 @@ protected:
   inline  bool is_typeArray_klass()           const { return assert_same_query(
                                                     layout_helper_is_typeArray(layout_helper()),
                                                     is_typeArray_klass_slow()); }
-  inline  bool is_value()                     const { return is_value_slow(); } //temporary hack
+  inline  bool is_inline_klass()              const { return is_inline_klass_slow(); } //temporary hack
   inline  bool is_valueArray_klass()          const { return assert_same_query(
                                                     layout_helper_is_valueArray(layout_helper()),
                                                     is_valueArray_klass_slow()); }

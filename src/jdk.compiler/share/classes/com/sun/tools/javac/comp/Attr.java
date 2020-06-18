@@ -2721,6 +2721,14 @@ public class Attr extends JCTree.Visitor {
             boolean isSpeculativeDiamondInferenceRound = TreeInfo.isDiamond(tree) &&
                     resultInfo.checkContext.deferredAttrContext().mode == DeferredAttr.AttrMode.SPECULATIVE;
             boolean skipNonDiamondPath = false;
+            // Check that it is an instantiation of a class and not a projection type
+            if (clazz.hasTag(SELECT)) {
+                JCFieldAccess fieldAccess = (JCFieldAccess) clazz;
+                if (fieldAccess.selected.type.isValue() &&
+                        (fieldAccess.name == names.ref || fieldAccess.name == names.val)) {
+                    log.error(tree.pos(), Errors.ProjectionCantBeInstantiated);
+                }
+            }
             // Check that class is not abstract
             if (cdef == null && !isSpeculativeDiamondInferenceRound && // class body may be nulled out in speculative tree copy
                 (clazztype.tsym.flags() & (ABSTRACT | INTERFACE)) != 0) {
@@ -5245,7 +5253,12 @@ public class Attr extends JCTree.Visitor {
 
             if (sealedSupers.isEmpty()) {
                 if ((c.flags_field & Flags.NON_SEALED) != 0) {
-                    log.error(TreeInfo.diagnosticPositionFor(c, env.tree), Errors.NonSealedWithNoSealedSupertype(c));
+                    boolean hasErrorSuper = types.directSupertypes(c.type)
+                                                 .stream()
+                                                 .anyMatch(s -> s.tsym.kind == Kind.ERR);
+                    if (!hasErrorSuper) {
+                        log.error(TreeInfo.diagnosticPositionFor(c, env.tree), Errors.NonSealedWithNoSealedSupertype(c));
+                    }
                 }
             } else {
                 if (c.isLocal() && !c.isEnum()) {

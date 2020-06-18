@@ -111,9 +111,9 @@ class MacroAssembler: public Assembler {
   // get_default_value_oop with extra assertion for empty value klass
   void get_empty_value_oop(Register value_klass, Register temp_reg, Register obj);
 
-  void test_field_is_flattenable(Register flags, Register temp_reg, Label& is_flattenable);
-  void test_field_is_not_flattenable(Register flags, Register temp_reg, Label& notFlattenable);
-  void test_field_is_flattened(Register flags, Register temp_reg, Label& is_flattened);
+  void test_field_is_inline_type(Register flags, Register temp_reg, Label& is_inline);
+  void test_field_is_not_inline_type(Register flags, Register temp_reg, Label& not_inline);
+  void test_field_is_inlined(Register flags, Register temp_reg, Label& is_inlined);
 
   // Check oops array storage properties, i.e. flattened and/or null-free
   void test_flattened_array_oop(Register oop, Register temp_reg, Label&is_flattened_array);
@@ -1737,6 +1737,15 @@ public:
   // CRC32 code for java.util.zip.CRC32::updateBytes() intrinsic.
   void update_byte_crc32(Register crc, Register val, Register table);
   void kernel_crc32(Register crc, Register buf, Register len, Register table, Register tmp);
+
+
+#ifdef _LP64
+  void kernel_crc32_avx512(Register crc, Register buf, Register len, Register table, Register tmp1, Register tmp2);
+  void kernel_crc32_avx512_256B(Register crc, Register buf, Register len, Register key, Register pos,
+                                Register tmp1, Register tmp2, Label& L_barrett, Label& L_16B_reduction_loop,
+                                Label& L_get_last_two_xmms, Label& L_128_done, Label& L_cleanup);
+#endif // _LP64
+
   // CRC32C code for java.util.zip.CRC32C::updateBytes() intrinsic
   // Note on a naming convention:
   // Prefix w = register only used on a Westmere+ architecture
@@ -1773,10 +1782,13 @@ public:
   // Fold 128-bit data chunk
   void fold_128bit_crc32(XMMRegister xcrc, XMMRegister xK, XMMRegister xtmp, Register buf, int offset);
   void fold_128bit_crc32(XMMRegister xcrc, XMMRegister xK, XMMRegister xtmp, XMMRegister xbuf);
+#ifdef _LP64
+  // Fold 512-bit data chunk
+  void fold512bit_crc32_avx512(XMMRegister xcrc, XMMRegister xK, XMMRegister xtmp, Register buf, Register pos, int offset);
+#endif // _LP64
   // Fold 8-bit data
   void fold_8bit_crc32(Register crc, Register table, Register tmp);
   void fold_8bit_crc32(XMMRegister crc, Register table, XMMRegister xtmp, Register tmp);
-  void fold_128bit_crc32_avx512(XMMRegister xcrc, XMMRegister xK, XMMRegister xtmp, Register buf, int offset);
 
   // Compress char[] array to byte[].
   void char_array_compress(Register src, Register dst, Register len,
