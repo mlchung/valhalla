@@ -768,44 +768,6 @@ public final class Class<T> implements java.io.Serializable,
     public native boolean isAssignableFrom(Class<?> cls);
 
     /**
-     * Tests if the type represented by this {@code Class} object can be
-     * converted to the type represented by the specified {@code Class} parameter
-     * via an identity conversion, via a widening reference conversion or
-     * via inline narrowing and widening conversions.
-     * <p>
-     * If this {@code Class} object represents a primitive type or {@code void},
-     * this method returns {@code true} if the specified {@code Class} parameter
-     * is exactly this {@code Class} object.
-     * <p>
-     * If this {@code Class} object represents a class or interface, this method
-     * returns {@code true} if this class or interface is the same as,
-     * or is a superclass or superinterface of, the class or interface
-     * represented by the specified {@code Class} parameter.
-     * <p>
-     * If this {@code Class} object or the specified {@code Class} parameter
-     * represents an {@linkplain #isInlineClass() inline class}, this method
-     * returns {@code true} if this {@code Class} object and the specified
-     * {@code Class} parameter represent {@linkplain #valueType() value projection type}
-     * and the {@linkplain #referenceType() reference projection type} of
-     * the same inline class.
-     *
-     * @param     cls the {@code Class} object to be checked
-     * @return    {@code true} if objects of this {@code Class} can be converted
-     *            to objects of the {@code cls} type
-     * @throws    NullPointerException if the specified {@code Class} parameter
-     *            is {@code null}.
-     */
-    public boolean isConvertibleTo(Class<?> cls) {
-        Objects.requireNonNull(cls);
-
-        if ((isInlineClass() || cls.isInlineClass()) && (valType == cls || refType == cls)) {
-            return true;
-        }
-
-        return cls.isAssignableFrom(this);
-    }
-
-    /**
      * Determines if this {@code Class} object represents an
      * interface type.
      *

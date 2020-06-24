@@ -24,20 +24,12 @@
  */
 package java.lang.constant;
 
-import java.lang.invoke.MethodHandles;
-
-import static java.lang.constant.ConstantUtils.dropFirstAndLastChar;
-import static java.lang.constant.ConstantUtils.internalToBinary;
-import static java.util.Objects.requireNonNull;
-
 /**
  * A <a href="package-summary.html#nominal">nominal descriptor</a> for an inline
  * class or array type.  A {@linkplain InlineClassDescImpl} corresponds to a
  * {@code Constant_Class_info} entry in the constant pool of a classfile.
  */
-final class InlineClassDescImpl implements ClassDesc {
-    private final String descriptor;
-
+final class InlineClassDescImpl extends AbstractClassDescImpl {
     /**
      * Creates a {@linkplain ClassDesc} from a descriptor string for an inline class
      *
@@ -47,62 +39,6 @@ final class InlineClassDescImpl implements ClassDesc {
      * @jvms 4.3.2 Field Descriptors
      */
     InlineClassDescImpl(String descriptor) {
-        requireNonNull(descriptor);
-        int len = ConstantUtils.skipOverFieldSignature(descriptor, 0, descriptor.length(), false);
-        if (len == 0 || len == 1
-            || len != descriptor.length())
-            throw new IllegalArgumentException(String.format("not a valid reference type descriptor: %s", descriptor));
-        this.descriptor = descriptor;
-    }
-
-    @Override
-    public String descriptorString() {
-        return descriptor;
-    }
-
-    @Override
-    public Class<?> resolveConstantDesc(MethodHandles.Lookup lookup)
-            throws ReflectiveOperationException {
-        ClassDesc c = this;
-        int depth = ConstantUtils.arrayDepth(descriptorString());
-        for (int i=0; i<depth; i++)
-            c = c.componentType();
-
-        assert c.isInlineClass();
-        Class<?> clazz = lookup.findClass(internalToBinary(dropFirstAndLastChar(c.descriptorString())));
-
-        for (int i = 0; i < depth; i++)
-            clazz = clazz.arrayType();
-        return clazz;
-    }
-
-    /**
-     * Returns {@code true} if this {@linkplain InlineClassDescImpl} is
-     * equal to another {@linkplain InlineClassDescImpl}.  Equality is
-     * determined by the two class descriptors having equal class descriptor
-     * strings.
-     *
-     * @param o the {@code ClassDesc} to compare to this
-     *       {@code ClassDesc}
-     * @return {@code true} if the specified {@code ClassDesc}
-     *      is equal to this {@code ClassDesc}.
-     */
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        ClassDesc constant = (ClassDesc) o;
-        return descriptor.equals(constant.descriptorString());
-    }
-
-    @Override
-    public int hashCode() {
-        return descriptor.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return String.format("ClassDesc[%s]", displayName());
+        super(descriptor);
     }
 }
