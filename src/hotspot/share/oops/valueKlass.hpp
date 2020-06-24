@@ -46,7 +46,7 @@ class ValueKlass: public InstanceKlass {
   ValueKlass(const ClassFileParser& parser);
 
   ValueKlassFixedBlock* valueklass_static_block() const {
-    address adr_jf = adr_value_fields_klasses();
+    address adr_jf = adr_inline_type_field_klasses();
     if (adr_jf != NULL) {
       return (ValueKlassFixedBlock*)(adr_jf + this->java_fields_count() * sizeof(Klass*));
     }
@@ -250,7 +250,8 @@ class ValueKlass: public InstanceKlass {
     return *((Array<VMRegPair>**)adr_return_regs());
   }
   bool is_scalarizable() const;
-  bool can_be_returned_as_fields() const;
+  bool can_be_passed_as_fields() const;
+  bool can_be_returned_as_fields(bool init = false) const;
   void save_oop_fields(const RegisterMap& map, GrowableArray<Handle>& handles) const;
   void restore_oop_results(RegisterMap& map, GrowableArray<Handle>& handles) const;
   oop realloc_result(const RegisterMap& reg_map, const GrowableArray<Handle>& handles, TRAPS);

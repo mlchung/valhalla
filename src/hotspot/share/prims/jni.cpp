@@ -499,7 +499,7 @@ JNI_ENTRY(jobject, jni_ToReflectedMethod(JNIEnv *env, jclass cls, jmethodID meth
   methodHandle m (THREAD, Method::resolve_jmethod_id(method_id));
   assert(m->is_static() == (isStatic != 0), "jni_ToReflectedMethod access flags doesn't match");
   oop reflection_method;
-  if (m->is_object_constructor()) {
+  if (m->is_object_constructor() || m->is_static_init_factory()) {
     reflection_method = Reflection::new_constructor(m, CHECK_NULL);
   } else {
     reflection_method = Reflection::new_method(m, false, CHECK_NULL);
@@ -1967,7 +1967,7 @@ JNI_ENTRY(jobject, jni_GetObjectField(JNIEnv *env, jobject obj, jfieldID fieldID
     fieldDescriptor fd;
     ik->find_field_from_offset(offset, false, &fd);  // performance bottleneck
     InstanceKlass* holder = fd.field_holder();
-    ValueKlass* field_vklass = ValueKlass::cast(holder->get_value_field_klass(fd.index()));
+    ValueKlass* field_vklass = ValueKlass::cast(holder->get_inline_type_field_klass(fd.index()));
     res = field_vklass->read_inlined_field(o, ik->field_offset(fd.index()), CHECK_NULL);
   }
   jobject ret = JNIHandles::make_local(env, res);
@@ -2076,7 +2076,7 @@ JNI_ENTRY_NO_PRESERVE(void, jni_SetObjectField(JNIEnv *env, jobject obj, jfieldI
     fieldDescriptor fd;
     ik->find_field_from_offset(offset, false, &fd);
     InstanceKlass* holder = fd.field_holder();
-    ValueKlass* vklass = ValueKlass::cast(holder->get_value_field_klass(fd.index()));
+    ValueKlass* vklass = ValueKlass::cast(holder->get_inline_type_field_klass(fd.index()));
     oop v = JNIHandles::resolve_non_null(value);
     vklass->write_inlined_field(o, offset, v, CHECK);
   }

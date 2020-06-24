@@ -215,8 +215,6 @@ void ValueKlass::remove_unshareable_info() {
 
 void ValueKlass::restore_unshareable_info(ClassLoaderData* loader_data, Handle protection_domain, PackageEntry* pkg_entry, TRAPS) {
   InstanceKlass::restore_unshareable_info(loader_data, protection_domain, pkg_entry, CHECK);
-  oop val = allocate_instance(CHECK);
-  set_default_value(val);
 }
 
 
@@ -299,7 +297,7 @@ int ValueKlass::collect_fields(GrowableArray<SigEntry>* sig, int base_off) {
     int offset = base_off + fs.offset() - (base_off > 0 ? first_field_offset() : 0);
     if (fs.is_inlined()) {
       // Resolve klass of inlined field and recursively collect fields
-      Klass* vk = get_value_field_klass(fs.index());
+      Klass* vk = get_inline_type_field_klass(fs.index());
       count += ValueKlass::cast(vk)->collect_fields(sig, offset);
     } else {
       BasicType bt = Signature::basic_type(fs.signature());
@@ -323,7 +321,7 @@ void ValueKlass::initialize_calling_convention(TRAPS) {
   // Because the pack and unpack handler addresses need to be loadable from generated code,
   // they are stored at a fixed offset in the klass metadata. Since value type klasses do
   // not have a vtable, the vtable offset is used to store these addresses.
-  if (is_scalarizable() && (InlineTypeReturnedAsFields || InlineTypePassFieldsAsArgs)) {
+  if (InlineTypeReturnedAsFields || InlineTypePassFieldsAsArgs) {
     ResourceMark rm;
     GrowableArray<SigEntry> sig_vk;
     int nb_fields = collect_fields(&sig_vk);
@@ -332,8 +330,7 @@ void ValueKlass::initialize_calling_convention(TRAPS) {
     for (int i = 0; i < sig_vk.length(); i++) {
       extended_sig->at_put(i, sig_vk.at(i));
     }
-
-    if (InlineTypeReturnedAsFields) {
+    if (can_be_returned_as_fields(/* init= */ true)) {
       nb_fields++;
       BasicType* sig_bt = NEW_RESOURCE_ARRAY(BasicType, nb_fields);
       sig_bt[0] = T_METADATA;
@@ -353,7 +350,12 @@ void ValueKlass::initialize_calling_convention(TRAPS) {
         *((address*)adr_pack_handler_jobject()) = buffered_blob->pack_fields_jobject();
         *((address*)adr_unpack_handler()) = buffered_blob->unpack_fields();
         assert(CodeCache::find_blob(pack_handler()) == buffered_blob, "lost track of blob");
+        assert(can_be_returned_as_fields(), "sanity");
       }
+    }
+    if (!can_be_returned_as_fields() && !can_be_passed_as_fields()) {
+      MetadataFactory::free_array<SigEntry>(class_loader_data(), extended_sig);
+      assert(return_regs() == NULL, "sanity");
     }
   }
 }
@@ -389,9 +391,14 @@ bool ValueKlass::is_scalarizable() const {
   return ScalarizeInlineTypes;
 }
 
+// Can this value type be passed as multiple values?
+bool ValueKlass::can_be_passed_as_fields() const {
+  return InlineTypePassFieldsAsArgs && is_scalarizable() && !is_empty_inline_type();
+}
+
 // Can this value type be returned as multiple values?
-bool ValueKlass::can_be_returned_as_fields() const {
-  return return_regs() != NULL;
+bool ValueKlass::can_be_returned_as_fields(bool init) const {
+  return InlineTypeReturnedAsFields && is_scalarizable() && !is_empty_inline_type() && (init || return_regs() != NULL);
 }
 
 // Create handles for all oop fields returned in registers that are going to be live across a safepoint
