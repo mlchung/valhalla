@@ -26,7 +26,7 @@ package java.lang.constant;
 
 /**
  * A <a href="package-summary.html#nominal">nominal descriptor</a> for a class,
- * interface, or array type.  A {@linkplain AbstractClassDescImpl} corresponds to a
+ * interface, or array type.  A {@linkplain ReferenceClassDescImpl} corresponds to a
  * {@code Constant_Class_info} entry in the constant pool of a classfile.
  */
 final class ReferenceClassDescImpl extends AbstractClassDescImpl {
