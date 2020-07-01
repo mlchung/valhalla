@@ -767,6 +767,7 @@ public final class Class<T> implements java.io.Serializable,
     @HotSpotIntrinsicCandidate
     public native boolean isAssignableFrom(Class<?> cls);
 
+
     /**
      * Determines if this {@code Class} object represents an
      * interface type.

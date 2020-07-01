@@ -26,8 +26,6 @@ package java.lang.invoke;
 
 import sun.invoke.util.Wrapper;
 
-import java.util.Objects;
-
 import static java.lang.invoke.MethodHandleInfo.*;
 import static sun.invoke.util.Wrapper.forPrimitiveType;
 import static sun.invoke.util.Wrapper.forWrapperType;
@@ -370,7 +368,7 @@ import static sun.invoke.util.Wrapper.isWrapperType;
             } else {
                 // inline types: fromType and toType are projection types of the same inline class
                 // identity types: fromType should be a superclass of toType.
-                return !strict || areConvertibleTypes(fromType, toType);
+                return !strict || canConvert(fromType, toType);
             }
         }
     }
@@ -397,7 +395,7 @@ import static sun.invoke.util.Wrapper.isWrapperType;
      * @param     toType the {@code Class} object to be converted to
      * @return    {@code true} if {@code fromType} can be converted to {@code toType}
      */
-    private boolean areConvertibleTypes(Class<?> fromType, Class<?> toType) {
+    private boolean canConvert(Class<?> fromType, Class<?> toType) {
         if (toType.isAssignableFrom(fromType)) {
             return true;
         }

@@ -45,7 +45,61 @@ public class InlineTypeConversionTest {
             this.ref = p2;
         }
     }
+
+    static Value m(Value.ref v) {
+        return v;
+    }
+
+    static Value.ref m2(Value v) {
+        if (((Object)v) == null) {
+            throw new Error("should have been caught by runtime?");
+        }
+        return null;
+    }
+
     static final Value VALUE = new Value(new Point(10,10), new Point(20, 20));
+
+    @Test
+    public static void inlineWidening() throws Throwable {
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        MethodHandle mh1 = lookup.findStatic(InlineTypeConversionTest.class, "m", methodType(Value.class, Value.ref.class));
+        MethodHandle mh2 = mh1.asType(methodType(Value.class, Value.class));
+        Object v = mh1.invoke(VALUE);
+        assertEquals(v, VALUE);
+        try {
+            Object v1 = mh1.invoke((Object)null);
+            assertTrue(false);
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+        }
+        try {
+            Object v2 = mh2.invoke((Object)null);
+            assertTrue(false);
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public static void inlineNarrowing() throws Throwable {
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        MethodHandle mh1 = lookup.findStatic(InlineTypeConversionTest.class, "m2", methodType(Value.ref.class, Value.class));
+        Object v = mh1.invoke(VALUE);
+        assertTrue(v == null);
+        try {
+            Object v1 = mh1.invoke((Object)null);
+            assertTrue(false);
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+        }
+        MethodHandle mh2 = mh1.asType(methodType(Value.class, Value.ref.class));
+        try {
+            Value v2 = (Value) mh2.invoke((Value.ref)null);
+            assertTrue(false);
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Test
     public static void valToRef() throws Throwable {
